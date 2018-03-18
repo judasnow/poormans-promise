@@ -1,13 +1,20 @@
+// 简单实现的 promise
 function PPromise (executor) {
-  let self = this
-  this.status = 'pending'
-  this.data = undefined
-  this.onResolvedCallback = []
+  let self = this;
 
+  this.status = 'pending';
+  this.data = undefined;
+
+  this.onResolvedCallback = [];
+  this.onRejectedCallback = [];
+
+  // 以下两个方法都是在 executor 方法中调用
+  // 用来改变 promise 对象的状态，以及值
   function resolve (value) {
     if (self.status === 'pending') {
-      self.status = 'resolved'
-      self.data = value
+      self.status = 'resolved';
+      self.data = value;
+      // 依次调用已经绑定的成功回调
       for (let i = 0; i < self.onResolvedCallback.length; i++) {
         self.onResolvedCallback[i](value)
       }
@@ -16,8 +23,9 @@ function PPromise (executor) {
 
   function reject (reason) {
     if (self.status === 'pending') {
-      self.status = 'rejected'
-      self.data = reason
+      self.status = 'rejected';
+      self.data = reason;
+      // 依次调用已经绑定的失败回调
       for (let i = 0; i < self.onResolvedCallback.length; i++) {
         self.onResolvedCallback[i](reason)
       }
@@ -31,21 +39,29 @@ function PPromise (executor) {
   }
 }
 
+// 注册回调函数
+// 总是会返回一个新的 promise 对象
 PPromise.prototype.then = function (onResolved, onRejected) {
-  var self = this
-  var promise2
+  // 这里会根据调用 then 时，promise 对象的不同状态进行不同的处理
+  console.log(this.status)
 
+  let self = this
+  let promise2
+
+  // 两个回调只能是函类型
   if (typeof onResolved !== 'function') {
     onResolved = function (v) {
+      return v
     }
   }
   if (typeof onRejected !== 'function') {
     onRejected = function (r) {
+      return r
     }
   }
 
   if (self.status === 'resolved') {
-    return promise2 = new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
       try {
         let x = onResolved(self.data)
         if (x instanceof PPromise) {
@@ -59,7 +75,7 @@ PPromise.prototype.then = function (onResolved, onRejected) {
   }
 
   if (self.status === 'rejected') {
-    return promise2 = new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
       try {
         let x = onRejected(self.data)
         if (x instanceof Promise) {
@@ -71,21 +87,23 @@ PPromise.prototype.then = function (onResolved, onRejected) {
     })
   }
 
+  // 最常见的应该是这种情况
   if (self.status === 'pending') {
-    return promise2 = new Promise(function (resolve, reject) {
+    // 将 onResolved 以及 onRejected 同时添加到新的 promise 中
+    return new Promise(function (resolve, reject) {
       self.onResolvedCallback.push(function (value) {
         try {
-          var x = onResolved(self.data)
+          let x = onResolved(self.data)
           if (x instanceof Promise) {
             x.then(resolve, reject)
           }
         } catch (e) {
           reject(e)
         }
-      })
+      });
       self.onRejectedCallback.push(function (reason) {
         try {
-          var x = onRejected(self.data)
+          let x = onRejected(self.data)
           if (x instanceof Promise) {
             x.then(resolve, reject)
           }
@@ -97,12 +115,16 @@ PPromise.prototype.then = function (onResolved, onRejected) {
   }
 }
 
-Promise.prototype.catch = function(onRejected) {
+Promise.prototype.catch = function (onRejected) {
   return this.then(null, onRejected)
 }
 
-new PPromise(resolve=>resolve(8))
-.then(function foo(value) {
+new PPromise(function (resolve, reject) {
+  setTimeout(() => {
+    resolve(1024)
+  }, 0)
+}).then(function foo (value) {
+  console.dir(233)
   console.log(value)
 })
 
