@@ -61,8 +61,9 @@ PPromise.prototype.then = function (onResolved, onRejected) {
   }
 
   if (self.status === 'resolved') {
-    return new Promise(function (resolve, reject) {
+    return new PPromise(function (resolve, reject) {
       try {
+        // onResolved 的返回值，决定 promise2 的值
         let x = onResolved(self.data)
         if (x instanceof PPromise) {
           x.then(resolve, reject)
@@ -75,7 +76,7 @@ PPromise.prototype.then = function (onResolved, onRejected) {
   }
 
   if (self.status === 'rejected') {
-    return new Promise(function (resolve, reject) {
+    return new PPromise(function (resolve, reject) {
       try {
         let x = onRejected(self.data)
         if (x instanceof Promise) {
@@ -90,11 +91,11 @@ PPromise.prototype.then = function (onResolved, onRejected) {
   // 最常见的应该是这种情况
   if (self.status === 'pending') {
     // 将 onResolved 以及 onRejected 同时添加到新的 promise 中
-    return new Promise(function (resolve, reject) {
+    return new PPromise(function (resolve, reject) {
       self.onResolvedCallback.push(function (value) {
         try {
           let x = onResolved(self.data)
-          if (x instanceof Promise) {
+          if (x instanceof PPromise) {
             x.then(resolve, reject)
           }
         } catch (e) {
@@ -104,7 +105,7 @@ PPromise.prototype.then = function (onResolved, onRejected) {
       self.onRejectedCallback.push(function (reason) {
         try {
           let x = onRejected(self.data)
-          if (x instanceof Promise) {
+          if (x instanceof PPromise) {
             x.then(resolve, reject)
           }
         } catch (e) {
@@ -122,10 +123,9 @@ Promise.prototype.catch = function (onRejected) {
 new PPromise(function (resolve, reject) {
   setTimeout(() => {
     resolve(1024)
-  }, 0)
-}).then(function foo (value) {
-  console.dir(233)
-  console.log(value)
+  }, 1000)
+}).then(function (v) {
+  console.dir(v)
 })
 
 // export default PPromise
